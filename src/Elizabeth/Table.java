@@ -166,6 +166,7 @@ public class Table{
 		// this reads the page number given relative to that table and deletes an entry then rewrite the page 
 		Page p = this.readOnePage(pageNumber);
 		p.getContent()[entryNumber] = null;
+		p.getEmptyIndices().add(entryNumber);
 		this.writeCertainPage(p, pageNumber);
 	}
 	
