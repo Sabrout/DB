@@ -1,69 +1,86 @@
 package Elizabeth;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 
 public class Table
 {
-	String tableName;
+	String name;
 	ArrayList <Page> pageList;
 	int pagesNum;
 	countPage countPage;
-	int entryNum;
+	int TupleNum;
+	ArrayList<String> columnNames;
 
 	public Table(String name) throws ClassNotFoundException
 	{
-		tableName = name;
+		this.name = name;
 		pageList = new ArrayList<Page>();
 
 		try
 		{
 			ObjectInputStream ois = 
-					new ObjectInputStream(new FileInputStream(new File("data/" + tableName + "_count")));
+					new ObjectInputStream(new FileInputStream(new File("data/" + name + "_count")));
 			countPage = (countPage) ois.readObject();
 			ois.close();
 
 			pagesNum = countPage.getPageCounter();
-			entryNum = countPage.getEntryCounter();
+			TupleNum = countPage.getTupleCounter();
 		}
 		catch(IOException e)
 		{
 			countPage = new countPage();
 			pagesNum = countPage.getPageCounter();
-			entryNum = countPage.getEntryCounter(); //TODO not sure what to do with entry counter
+			TupleNum = countPage.getTupleCounter(); //TODO not sure what to do with Tuple counter
+			countPage.write(name);
+		}
+
+		columnNames = new ArrayList<String>();
+		try
+		{
+			String splitBy = ", ";
+			BufferedReader br = new BufferedReader(new FileReader("data/metadata.csv"));
+			String line;
+			while((line = br.readLine()) != null)
+			{
+				String[] b = line.split(splitBy);
+				if(b[0].equals(name))
+				{
+					columnNames.add(b[1]);
+				}
+			}
+			br.close();
+		}
+		catch (Exception e)
+		{
+			System.out.println("couldn't read csv column names");
 		}
 	}
 
-	public void addNewPageToTable()
+	public void addPage()
 	{
-		// create a new page and link it to the table.
-		
 		pageList.add(new Page(DBApp.getMaximumRowsCountinPage(), pagesNum + 1));
 		pagesNum++;
 	}
 
 	public void readTableContent()
 	{
-		//this method reads all files starting with the name of the called table
-		//make sure you create the table instance with the correct name to be able to read its files
-		//i didn't specify the extension given to the files until we agree upon one
-
 		File dataDirectory = new File("data/");
 		File[] allFiles = dataDirectory.listFiles();
 
 		for (int i = 0; i < allFiles.length; i++)
 		{
-			if(allFiles[i].getName().startsWith(this.getTableName()))
+			if(allFiles[i].getName().startsWith(name) && !allFiles[i].getName().equals(name + "_count"))
 			{
 				try
 				{
 					ObjectInputStream ois = 
 							new ObjectInputStream(new FileInputStream
-									(new File("data/" + allFiles[i].getName() + "_" + i)));
+									(new File("data/" + allFiles[i].getName())));
 					pageList.add((Page) ois.readObject());
 					ois.close();
 				}
@@ -75,27 +92,15 @@ public class Table
 		}
 	}
 
-	public void writeAllPages()
+	public void writePages()
 	{
-		//this method gets all pages of the calling table and write all the page files to bytes
-
-		ArrayList<Page> tablePages = this.getPageList();
-		for (int i = 0; i < tablePages.size(); i++) {
-			Page p = tablePages.get(i);
-			try
-			{
-				ObjectOutputStream oos = 
-						new ObjectOutputStream(new FileOutputStream
-								(new File("data/" + this.getTableName() + "_" + i)));
-				oos.writeObject(p);
-				oos.close();
-			} catch(Exception e){e.printStackTrace();}
-
+		for (int i = 0; i < pageList.size(); i++)
+		{
+			pageList.get(i).write(name);
 		}
-
 	}
 
-	public Page readOnePage(int page_number) 
+	public Page readPage(int pageNumber) 
 	{
 
 		/*this method catches the exception if the page doesn't exist, but you should remove the try and catch
@@ -109,73 +114,68 @@ public class Table
 		try
 		{
 			ObjectInputStream ois = 
-					new ObjectInputStream(new FileInputStream(new File("/data/"+this.getTableName()+"_"+page_number)));
+					new ObjectInputStream(new FileInputStream
+							(new File("data/" + name + "_" + pageNumber)));
 			returnPage = (Page) ois.readObject();
 			ois.close();
-		}catch(Exception e) {e.printStackTrace();}
-
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
 
 		return returnPage;
 	}
 
-	public void writeCertainPage(Page p, int page_number) 
+	public ArrayList<String[]> getCloumnData(String columnName)
 	{
-		/*this method catches the exception if the page doesn't exist, but you should remove the try and catch
-		when you handle it in the main class */
-
-		//reads a certain page from the table and then overwrite it with the new page you called the method with
-
-		try
+		ArrayList<String[]> returnArray = new ArrayList<String[]>();
+		int i;
+		
+		for (i = 0; i < columnNames.size(); i++)
 		{
-
-			@SuppressWarnings("unused")
-			Page testingPage = readOnePage(page_number);
-			//ERROR HERE
-//			if(!testingPage.isDead())
-//			{
-//				ObjectOutputStream oos = 
-//						new ObjectOutputStream(
-//								new FileOutputStream(new File("data/"+this.getTableName()+"_"+page_number)));
-//				oos.writeObject(p);
-//				oos.close();
-//			}
-		} catch(Exception e){e.printStackTrace();}
-
+			if(columnNames.get(i).equals(columnName))
+				break;
+		}
+		
+		if(i == columnNames.size())
+		{
+			return null;
+		}
+		
+		for (int j = 0; j < pageList.size(); j++)
+		{
+			for (int k = 0; k < pageList.get(j).getEntriesNum(); k++)
+			{
+				Tuple[] entries = pageList.get(j).getContent();
+				returnArray.add(new String[] {entries[k].getColumn(i), 
+				                "" + pageList.get(j).getPageNum(), "" + k});
+			}
+		}
+		return returnArray;
+		/*
+		 * returnArray is the returned array, of type ArrayList<String[]>
+		 * each list inside the returnArray is mapped as follows:
+		 * String[0] is the values of this column
+		 * String[1] is the page number
+		 * String[2] is the entry number(index)
+		 */
+	
 	}
-
-	public void deleteEntry(int entryNumber, int pageNumber) 
+	
+	public ArrayList<String> getColumnNames()
 	{
-		// this reads the page number given relative to that table and deletes an entry then rewrite the page 
-		Page p = this.readOnePage(pageNumber);
-		p.getContent()[entryNumber] = null;
-		//ERROR HERE
-		//p.getEmptyIndices().add(entryNumber);
-		this.writeCertainPage(p, pageNumber);
+		return columnNames;
 	}
-
-	// Setters and getters
-
-	public String getTableName()
+	
+	public String getName()
 	{
-		return tableName;
-	}
-
-	public void setTableName(String tableName)
-	{
-
-		// we should handle table renaming here
-
-		this.tableName = tableName;
+		return name;
 	}
 
 	public ArrayList<Page> getPageList()
 	{
 		return pageList;
-	}
-
-	public void setPageList(ArrayList<Page> pageList)
-	{
-		this.pageList = pageList;
 	}
 
 	public int getpagesNum()

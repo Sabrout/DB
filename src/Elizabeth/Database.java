@@ -27,7 +27,7 @@ class Database
 	{
 		for(int i = 0; i < tableList.size(); i++)
 		{
-			if(tableList.get(i).getTableName().equals(tableName))
+			if(tableList.get(i).getName().equals(tableName))
 			{
 				return tableList.get(i);
 			}
@@ -39,7 +39,7 @@ class Database
 	{
 		for (int i = 0; i < tableList.size(); i++)
 		{
-			if(tableList.get(i).getTableName().equals(table.getTableName()))
+			if(tableList.get(i).getName().equals(table.getName()))
 				return false;
 		}
 		

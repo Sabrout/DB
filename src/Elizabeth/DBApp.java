@@ -19,14 +19,14 @@ public class DBApp {
 
 	public void init() {
 		try {
-			
+
 			MaximumRowsCountinPage = ConfigFile.loadConfigFile().get(0);
 			KDTreeN = ConfigFile.loadConfigFile().get(1);
-			
+
 		} catch (IOException e) {
 			// TODO: handle exception
 		}
-		
+
 		database = new Database("DB");   
 		// Not sure if initializing a new DB every time we run the application
 
@@ -49,7 +49,7 @@ public class DBApp {
 		hs.addAll(tables);
 		tables.clear();
 		tables.addAll(hs);
-		
+
 		for (int i = 0; i < tables.size(); i++) {
 			try {
 				database.addTable(new Table(tables.get(i)));
@@ -58,26 +58,22 @@ public class DBApp {
 				e.printStackTrace();
 			}
 		}
-		
+
 	}
 
 	public void createTable(String strTableName,
 			Hashtable<String, String> htblColNameType,
 			Hashtable<String, String> htblColNameRefs, String strKeyColName)
 					throws DBAppException, IOException, ClassNotFoundException {
-		
-		
-		// adjust the addTable with the boolean thingy
+
+
 		Table table = new Table(strTableName);
 		if (database.addTable(table)) {
-			table.addNewPageToTable();
-			table.writeAllPages();
-
 			FileWriter fileWriter = new FileWriter("data/metadata.csv", true);
 			PrintWriter printWriter = new PrintWriter(fileWriter);
 			Iterator<Entry<String, String>> iterator = htblColNameType.entrySet()
 					.iterator();
-			
+
 			while (iterator.hasNext()) {
 				Entry<String, String> current = iterator.next();
 				printWriter.append(strTableName + ", " + current.getKey() + ", "
@@ -90,7 +86,7 @@ public class DBApp {
 			printWriter.flush();
 			printWriter.close();	
 		}
-		
+
 	}
 
 	public void createIndex(String strTableName, String strColName)
@@ -103,6 +99,61 @@ public class DBApp {
 
 	public void insertIntoTable(String strTableName,
 			Hashtable<String, String> htblColNameValue) throws DBAppException {
+
+		Table table = database.getTable(strTableName);
+		table.readTableContent();
+
+		Iterator<Entry<String, String>> iterator = htblColNameValue.entrySet()
+				.iterator();
+		ArrayList<String> columnNames = new ArrayList<String>(table.getColumnNames());
+
+		if(htblColNameValue.size() == columnNames.size())
+		{
+			boolean isEqual = true;
+			String [] valuesForTuple = new String[columnNames.size()];
+			for (int i = 0; i < columnNames.size() && iterator.hasNext(); i++)
+			{
+				Entry<String, String> current = iterator.next();
+				if (!current.getKey().equals(columnNames.get(i)))
+				{
+					isEqual = false;
+					return;
+				}
+				valuesForTuple[i] = current.getValue();
+
+			}
+
+			if (isEqual)
+			{
+				int i;
+				
+				if(table.getPageList().size() == 0)
+					table.addPage();
+				
+				for (i = 0; i < table.getPageList().size(); i++)
+				{
+					if (!table.getPageList().get(i).isFull())
+					{
+						table.getPageList().get(i).addTuple(
+								new Tuple(valuesForTuple));
+					}
+				}
+				
+				if(i == table.getPageList().size())
+				{
+					table.addPage();
+					table.getPageList().get(i).addTuple(new Tuple(valuesForTuple));
+
+				}
+			}
+
+			table.writePages();
+		}
+		
+		else
+		{
+			System.out.println("Not equal sizes hash and columns");
+		}
 	}
 
 	public void deleteFromTable(String strTableName,
@@ -137,19 +188,7 @@ public class DBApp {
 		KDTreeN = kDTreeN;
 	}
 
-	public static void main(String[] args) {
-		try {
-			DBApp x = new DBApp();
-			x.init();
-			Hashtable<String, String> htblColNameType = new Hashtable<String, String>();
-			htblColNameType.put("ID", "java.lang.Integer");
-			htblColNameType.put("Name", "java.lang.String");
-			Hashtable<String, String> htblColNameRefs = new Hashtable<String, String>();
-			String strKeyColName = "ID";
-			x.createTable("Students", htblColNameType, htblColNameRefs, strKeyColName);
-			x.createTable("Users", htblColNameType, htblColNameRefs, strKeyColName);
-		} catch (Exception e) {
-			// TODO: handle exception
-		}
+	public Database getDatabase() {
+		return database;
 	}
 }

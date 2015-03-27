@@ -1,18 +1,23 @@
 package Elizabeth;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 
 @SuppressWarnings("serial")
 class Page implements Serializable{
 	
-	private Entry[] content;
+	private Tuple[] content;
 	private int entriesNum;
 	private int pageNum;
 	private boolean full;
 	
 	public Page(int allowed, int pageNum)
 	{
-		content = new Entry[allowed];
+		content = new Tuple[allowed];
 		entriesNum = 0;
 		full = false;
 		this.pageNum = pageNum;
@@ -33,11 +38,11 @@ class Page implements Serializable{
 		entriesNum--;
 	}
 	
-	public boolean addEntry(Entry newbie)
+	public boolean addTuple(Tuple newbie)
 	{
 		for(int i = 0; i < content.length; i++) //Array.length = lastIndex + 1
 		{
-			if(content[i] == null)
+			if(content[i] == null || content[i].isDeleted())
 			{
 				content[i] = newbie;
 				incrementEntriesNum();
@@ -52,12 +57,33 @@ class Page implements Serializable{
 		return false;
 	}
 	
-	public boolean deleteEntry()
+	public void write(String tableName)
+	{
+		ObjectOutputStream oos;
+		
+		try
+		{
+			oos = new ObjectOutputStream(
+					new FileOutputStream(new File("data/" + tableName + "_" + pageNum)));
+			oos.writeObject(this);
+			oos.close();
+		}
+		catch (FileNotFoundException e)
+		{
+			e.printStackTrace();
+		}
+		catch (IOException e)
+		{
+			e.printStackTrace();
+		}
+	}
+	
+	public boolean deleteTuple()
 	{
 		return false; //TODO
 	}
 	
-	public Entry[] getContent()
+	public Tuple[] getContent()
 	{
 		return content;
 	}
