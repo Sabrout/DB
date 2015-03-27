@@ -27,7 +27,15 @@ public class DBAppTest {
 			htblColNameValue.put("ID", "01011010");
 			htblColNameValue.put("Name", "Sabrout");
 			x.insertIntoTable("Students", htblColNameValue);
-			System.out.println(x.getDatabase().getTable("Students").getPageList().get(1).getContent()[0].getValues().toString());
+			
+			// createIndex Test
+			x.createIndex("Students", "Name");
+			
+			
+			// Creating Multi-Dim Index
+//			Hashtable<String, String> htblColNames = new Hashtable<String, String>();
+//			htblColNames.put("ID", "Names");
+//			x.createMultiDimIndex("Students", htblColNames);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

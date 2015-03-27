@@ -38,27 +38,6 @@ public class Table
 			TupleNum = countPage.getTupleCounter(); //TODO not sure what to do with Tuple counter
 			countPage.write(name);
 		}
-
-		columnNames = new ArrayList<String>();
-		try
-		{
-			String splitBy = ", ";
-			BufferedReader br = new BufferedReader(new FileReader("data/metadata.csv"));
-			String line;
-			while((line = br.readLine()) != null)
-			{
-				String[] b = line.split(splitBy);
-				if(b[0].equals(name))
-				{
-					columnNames.add(b[1]);
-				}
-			}
-			br.close();
-		}
-		catch (Exception e)
-		{
-			System.out.println("couldn't read csv column names");
-		}
 	}
 
 	public void addPage()
@@ -127,7 +106,7 @@ public class Table
 		return returnPage;
 	}
 
-	public ArrayList<String[]> getCloumnData(String columnName)
+	public ArrayList<String[]> getColumnData(String columnName)
 	{
 		ArrayList<String[]> returnArray = new ArrayList<String[]>();
 		int i;
@@ -165,6 +144,27 @@ public class Table
 	
 	public ArrayList<String> getColumnNames()
 	{
+		columnNames = new ArrayList<String>();
+		try
+		{
+			String splitBy = ", ";
+			BufferedReader br = new BufferedReader(new FileReader("data/metadata.csv"));
+			String line;
+			while((line = br.readLine()) != null)
+			{
+				String[] b = line.split(splitBy);
+				if(b[0].equals(name))
+				{
+					columnNames.add(b[1]);
+				}
+			}
+			br.close();
+		}
+		catch (Exception e)
+		{
+			System.out.println("couldn't read csv column names");
+		}
+		
 		return columnNames;
 	}
 	
